@@ -1,5 +1,6 @@
 (ns clj-gremlin.core
   (:import (clj-gremlin.pipeline GremlinClojurePipeline)
+           (com.tinkerpop.pipes PipeFunction)
            (com.tinkerpop.blueprints Graph
                                      Element)
            (com.tinkerpop.gremlin.java GremlinPipeline)
@@ -7,6 +8,10 @@
 
 (defn clojure-pipeline [starts]
   (GremlinClojurePipeline. starts))
+
+(defn clojure-pipe-function [f]
+  (proxy [PipeFunction] []
+      (compute [input] (f input))))
 
 (defn V [^Graph g]
   (clojure-pipeline (.getVertices g)))
@@ -24,18 +29,21 @@
 (defn prop [^Element e k]
   (.getProperty e (name k)))
 
-(defprotocol Out
+(defprotocol Steps
   (iout [self labels])
   (ioutE [self labels])
+  (step  [self f])
   )
 
-(extend-protocol Out
+(extend-protocol Steps
   GremlinPipeline
   (iout  [self labels] (.out  self (into-array String (map name labels))))
   (ioutE [self labels] (.outE self (into-array String (map name labels))))
+  (step  [self f]      (.step self (clojure-pipe-function f)))
   Element
   (iout  [self labels] (iout  (clojure-pipeline self) labels))
   (ioutE [self labels] (ioutE (clojure-pipeline self) labels))
+  (step  [self f]      (step  (clojure-pipeline self) f))
 )
 
 (defn out [o & labels]

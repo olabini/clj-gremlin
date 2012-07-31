@@ -60,15 +60,69 @@
         )
       )
 
-    (testing "has"
+    (testing "step"
+      (is (= (into #{} (step (V g) #(prop (.next %) :name)))   #{"lop" "vadas" "marko" "peter" "ripple" "josh"}))
+      (is (= (into #{} (step (v g 1) #(prop (.next %) :name))) #{"marko"}))
       )
 
-    (testing "inV"
-      )
+    ;; transform{closure}
+    ;; _      -- not sure if we need this
+    ;; id
+    ;; label
+    ;; in(labels...?)
+    ;; inE(labels...?)
+    ;; both(labels...?)
+    ;; bothE(labels...?)
+    ;; outV
+    ;; inV
+    ;; bothV
+    ;; memoize(string, map?)
+    ;; memoize(integer, map?)
+    ;; gather{closure?}
+    ;; scatter
+    ;; path(closures..?)
+    ;; cap
+    ;; select(list?,closures..?)
+    ;; order(closure?)
 
-    ;; originally "filter"
-    (testing "where"
-      )
+    ;; filter{closure}  -- should be "where" instead
+    ;; [i]
+    ;; [i..j]
+    ;; has('key',value)
+    ;; has('key',T,value)
+    ;; hasNot('key',value)
+    ;; hasNot('key',T,value)
+    ;; back(integer)
+    ;; back(string)
+    ;; and(pipes...)
+    ;; or(pipes...)
+    ;; random(double)
+    ;; dedup(closure?)
+    ;; simplePath
+    ;; except(collection)
+    ;; retain(collection)
+    ;; interval(key,start,end)
+
+    ;; sideEffect{closure}
+    ;; groupBy(map?){closure}{closure}
+    ;; groupCount(map?){closure?}{closure?}
+    ;; aggregate(collection?,closure?)
+    ;; table(table?,strings..?,closures..?)
+    ;; tree(map?, closures..?)
+    ;; as(string)
+    ;; optional(integer)
+    ;; optional(string)
+    ;; store(collection?,closure?)
+
+    ;; loop(integer){whileClosure}{emitClosure?}
+    ;; loop(string){whileClosure}{emitClosure?}
+    ;; ifThenElse{ifClosure}{thenClosure}{elseClosure}
+    ;; copySplit(pipes...)
+    ;; fairMerge
+    ;; exhaustMerge
+
+
+
 
 
     (testing "chains"
@@ -86,6 +140,11 @@
       ;;                 :name))
       ;;        #{"ripple" "lop"}))
 
+      ;; g.v(1).out('likes').in('likes').out('likes').groupCount(m)
+
+      ;; m = [:]; c = 0;
+      ;; g.V.out.groupCount(m).loop(2){c++ < 1000}
+      ;; m.sort{a,b -> a.value <=> b.value}
       )
     )
   )
