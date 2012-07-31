@@ -60,33 +60,32 @@
         )
       )
 
+    (testing "has"
+      )
+
+    (testing "inV"
+      )
+
+    ;; originally "filter"
+    (testing "where"
+      )
+
+
     (testing "chains"
       (is (= (set (map str (-> g
                                (v 1)
                                outE
                                :weight
-                               ))) #{"0.5" "0.4" "1.0"}))
+                               )
+                       )) #{"0.5" "0.4" "1.0"}))
+      ;; (is (= (set (-> g
+      ;;                 (v 1)
+      ;;                 (out "knows")
+      ;;                 (where #(> (prop % :age) 30))
+      ;;                 (out "created")
+      ;;                 :name))
+      ;;        #{"ripple" "lop"}))
+
       )
     )
   )
-
-
-
-
-;; gremlin> // lets only traverse to the head vertices of those edges
-;; gremlin> // that have a weight that is less than 1.0
-;; gremlin> v.outE.has('weight', T.lt, 1.0f).inV
-;; ==>v[2]
-;; ==>v[3]
-;; gremlin> // lets do the same, but with a more general "filter closure"
-;; gremlin> v.outE.filter{it.weight < 1.0}.inV
-;; ==>v[2]
-;; ==>v[3]
-;; gremlin> // lets get the property maps of these vertices.
-;; gremlin> v.outE.filter{it.weight < 1.0}.inV.map
-;; ==>{name=vadas, age=27}
-;; ==>{name=lop, lang=java}
-;; gremlin> // lets traverse to marko's 30+ year old friends' created projects
-;; gremlin> v.out('knows').filter{it.age > 30}.out('created').name
-;; ==>ripple
-;; ==>lop

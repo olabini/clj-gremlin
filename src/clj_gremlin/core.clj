@@ -24,21 +24,22 @@
 (defn prop [^Element e k]
   (.getProperty e (name k)))
 
-(defn first-class [f & rest] (class f))
+(defprotocol Out
+  (iout [self labels])
+  (ioutE [self labels])
+  )
 
-(defmulti out first-class)
+(extend-protocol Out
+  GremlinPipeline
+  (iout  [self labels] (.out  self (into-array String (map name labels))))
+  (ioutE [self labels] (.outE self (into-array String (map name labels))))
+  Element
+  (iout  [self labels] (iout  (clojure-pipeline self) labels))
+  (ioutE [self labels] (ioutE (clojure-pipeline self) labels))
+)
 
-(defmethod out GremlinPipeline
-  [p & labels] (.out p (into-array String (map name labels))))
+(defn out [o & labels]
+  (iout o labels))
 
-(defmethod out Element
-  [e & labels] (apply out (clojure-pipeline e) labels))
-
-
-(defmulti outE first-class)
-
-(defmethod outE GremlinPipeline
-  [p & labels] (.outE p (into-array String (map name labels))))
-
-(defmethod outE Element
-  [e & labels] (apply outE (clojure-pipeline e) labels))
+(defn outE [o & labels]
+  (ioutE o labels))
