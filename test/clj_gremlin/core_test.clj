@@ -34,6 +34,11 @@
       (is (ids? (v g 1 3) #{"1" "3"}))
       )
 
+    (testing "e"
+      (is (= (.getId (e g 8)) "8"))
+      (is (ids? (e g 11 12) #{"11" "12"}))
+      )
+
     (testing "property lookup"
       (let [vertice (v g 1)]
         (is (= (prop vertice :name) "marko"))
@@ -65,10 +70,31 @@
       (is (= (into #{} (step (v g 1) #(prop (.next %) :name))) #{"marko"}))
       )
 
-    ;; transform{closure}
-    ;; _      -- not sure if we need this
-    ;; id
-    ;; label
+    (testing "transform"
+      (is (= (into #{} (transform (V g) #(prop % :name))) #{"lop" "vadas" "marko" "peter" "ripple" "josh"}))
+      (is (= (into #{} (transform
+                        (transform (V g) #(prop % :name))
+                        count)) #{3 5 6 4}))
+
+      (is (= (into #{} (transform (v g 1) #(prop % :name))) #{"marko"}))
+      (is (= (into #{} (transform
+                        (transform (v g 1) #(prop % :name))
+                        count)) #{5}))
+      )
+
+    (testing "id"
+      (is (= (into #{} (id (V g))) #{"1" "2" "3" "4" "5" "6"}))
+
+      (is (= (into #{} (id (v g 1))) #{"1"}))
+      )
+
+    (testing "label"
+      (is (= (into #{} (label (E g))) #{"created" "knows"}))
+      (is (= (into #{} (label (e g 10))) #{"created"}))
+      )
+
+
+
     ;; in(labels...?)
     ;; inE(labels...?)
     ;; both(labels...?)
@@ -84,6 +110,7 @@
     ;; cap
     ;; select(list?,closures..?)
     ;; order(closure?)
+    ;; _      -- not sure if we need this
 
     ;; filter{closure}  -- should be "where" instead
     ;; [i]
