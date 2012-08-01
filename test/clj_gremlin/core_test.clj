@@ -349,9 +349,49 @@
       (is (= (-> g V out (dedup #(prop % :lang)) seq) [v2 v3]))
       )
 
-    ;; sideEffect{closure}
-    ;; groupBy(map?){closure}{closure}
-    ;; groupCount(map?){closure?}{closure?}
+    (testing "side-effect"
+      (let [a (atom nil)]
+        (doall (seq (-> g (v 1) (side-effect (fn [it] (swap! a (fn [_] it)))) :name)))
+        (is (= @a v1))
+        (doall (seq (-> g V (side-effect (fn [it] (swap! a (fn [_] it)))) :name)))
+        (is (= @a v4))
+        )
+      )
+
+    (testing "group"
+      (let [m (java.util.HashMap.)]
+        (doall (-> g V (group m #(prop % :lang) #(prop % :name)) seq))
+        (is (= m {"java" ["lop" "ripple"] nil ["vadas" "marko" "peter" "josh"]}))
+        )
+      (let [m (java.util.HashMap.)]
+        (doall (-> g (v 1) (group m #(prop % :lang) #(prop % :name)) seq))
+        (is (= m {nil ["marko"]}))
+        )
+      )
+
+    (testing "group-count"
+      (let [m (java.util.HashMap.)]
+        (doall (-> g V (out "created") (group-count m #(prop % :name)) seq))
+        (is (= m {"lop" 3 "ripple" 1}))
+        )
+
+      (let [m (java.util.HashMap.)]
+        (doall (-> g (v 1) (out "created") (group-count m #(prop % :name)) seq))
+        (is (= m {"lop" 1}))
+        )
+
+      (let [m (java.util.HashMap.)]
+        (doall (-> g V (out "created") (group-count m #(prop % :name) (fn [a b] (+ b 2))) seq))
+        (is (= m {"lop" 6 "ripple" 2}))
+        )
+
+      (let [m (java.util.HashMap.)]
+        (doall (-> g (v 1) (out "created") (group-count m #(prop % :name) (fn [a b] (+ b 2))) seq))
+        (is (= m {"lop" 2}))
+        )
+      )
+
+
     ;; aggregate(collection?,closure?)
     ;; table(table?,strings..?,closures..?)
     ;; tree(map?, closures..?)

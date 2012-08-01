@@ -15,6 +15,10 @@
   (proxy [PipeFunction] []
       (compute [input] (f input))))
 
+(defn clojure-pipe-function-pair [f]
+  (proxy [PipeFunction] []
+      (compute [^Pair input] (f (.getA input) (.getB input)))))
+
 (defn clojure-pipe-function-pair-to-int [f]
   (proxy [PipeFunction] []
       (compute [^Pair input] (int (f (.getA input) (.getB input))))))
@@ -85,6 +89,11 @@
   (interval [self k from to])
   (internal-dedup-simple [self])
   (internal-dedup-fn [self f])
+  (side-effect [self f])
+  (internal-group-2 [self m f1 f2])
+  (internal-group-3 [self m f1 f2 f3])
+  (internal-group-count-1 [self m f1])
+  (internal-group-count-2 [self m f1 f2])
   )
 
 (defn- ensure-type [o]
@@ -142,6 +151,11 @@
   (interval [self k from to] (.interval self (name k) (ensure-type from) (ensure-type to)))
   (internal-dedup-simple [self] (.dedup self))
   (internal-dedup-fn [self f] (.dedup self (clojure-pipe-function f)))
+  (side-effect [self f] (.sideEffect self (clojure-pipe-function f)))
+  (internal-group-2 [self m f1 f2] (.groupBy self m (clojure-pipe-function f1) (clojure-pipe-function f2)))
+  (internal-group-3 [self m f1 f2 f3] (.groupBy self m (clojure-pipe-function f1) (clojure-pipe-function f2) (clojure-pipe-function f3)))
+  (internal-group-count-1 [self m f1] (.groupCount self m (clojure-pipe-function f1)))
+  (internal-group-count-2 [self m f1 f2] (.groupCount self m (clojure-pipe-function f1) (clojure-pipe-function-pair f2)))
 
   Element
   (internal-out  [self labels] (internal-out  (clojure-pipeline self) labels))
@@ -179,6 +193,11 @@
   (interval [self k from to] (interval (clojure-pipeline self) k from to))
   (internal-dedup-simple [self] (internal-dedup-simple (clojure-pipeline self)))
   (internal-dedup-fn [self f] (internal-dedup-fn (clojure-pipeline self) f))
+  (side-effect [self f] (side-effect (clojure-pipeline self) f))
+  (internal-group-2 [self m f1 f2] (internal-group-2 (clojure-pipeline self) m f1 f2))
+  (internal-group-3 [self m f1 f2 f3] (internal-group-3 (clojure-pipeline self) m f1 f2 f3))
+  (internal-group-count-1 [self m f1] (internal-group-count-1 (clojure-pipeline self) m f1))
+  (internal-group-count-2 [self m f1 f2] (internal-group-count-2 (clojure-pipeline self) m f1 f2))
   )
 
 (defn out [o & labels]
@@ -241,3 +260,11 @@
 (defn dedup
   ([o] (internal-dedup-simple o))
   ([o f] (internal-dedup-fn o f)))
+
+(defn group
+  ([o m f1 f2] (internal-group-2 o m f1 f2))
+  ([o m f1 f2 f3] (internal-group-3 o m f1 f2 f3)))
+
+(defn group-count
+  ([o m f1] (internal-group-count-1 o m f1))
+  ([o m f1 f2] (internal-group-count-2 o m f1 f2)))
