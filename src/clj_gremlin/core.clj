@@ -77,7 +77,21 @@
   (internal-has-cmp [self k cmp v])
   (internal-has-not-kv [self k v])
   (internal-has-not-cmp [self k cmp v])
+  (back [self v])
+  (_ [self])
+  (random [self n])
+  (except [self c])
+  (retain [self c])
+  (interval [self k from to])
+  (internal-dedup-simple [self])
+  (internal-dedup-fn [self f])
   )
+
+(defn- ensure-type [o]
+  (cond
+    (instance? Long o) (int o)
+    (instance? Double o) (float o)
+    :else o))
 
 (extend-protocol Steps
   GremlinPipeline
@@ -120,6 +134,14 @@
   (internal-has-cmp [self k cmp v] (.has self k cmp v))
   (internal-has-not-kv [self k v] (.hasNot self k v))
   (internal-has-not-cmp [self k cmp v] (.hasNot self k cmp v))
+  (back [self v] (.back self v))
+  (_ [self] (._ self))
+  (random [self n] (.random self n))
+  (except [self c] (.except self c))
+  (retain [self c] (.retain self c))
+  (interval [self k from to] (.interval self (name k) (ensure-type from) (ensure-type to)))
+  (internal-dedup-simple [self] (.dedup self))
+  (internal-dedup-fn [self f] (.dedup self (clojure-pipe-function f)))
 
   Element
   (internal-out  [self labels] (internal-out  (clojure-pipeline self) labels))
@@ -149,6 +171,14 @@
   (internal-has-cmp [self k cmp v] (internal-has-cmp (clojure-pipeline self) k cmp v))
   (internal-has-not-kv [self k v] (internal-has-not-kv (clojure-pipeline self) k v))
   (internal-has-not-cmp [self k cmp v] (internal-has-not-cmp (clojure-pipeline self) k cmp v))
+  (back [self v] (back (clojure-pipeline self) v))
+  (_ [self] (_ (clojure-pipeline self)))
+  (random [self n] (random (clojure-pipeline self) n))
+  (except [self c] (except (clojure-pipeline self) c))
+  (retain [self c] (retain (clojure-pipeline self) c))
+  (interval [self k from to] (interval (clojure-pipeline self) k from to))
+  (internal-dedup-simple [self] (internal-dedup-simple (clojure-pipeline self)))
+  (internal-dedup-fn [self f] (internal-dedup-fn (clojure-pipeline self) f))
   )
 
 (defn out [o & labels]
@@ -202,8 +232,12 @@
 
 (defn has
   ([o k v] (internal-has-kv o k v))
-  ([o k cmp v] (internal-has-cmp o k (get tokens cmp cmp) (int v))))
+  ([o k cmp v] (internal-has-cmp o k (get tokens cmp cmp) (ensure-type v))))
 
 (defn has-not
   ([o k v] (internal-has-not-kv o k v))
-  ([o k cmp v] (internal-has-not-cmp o k (get tokens cmp cmp) (int v))))
+  ([o k cmp v] (internal-has-not-cmp o k (get tokens cmp cmp) (ensure-type v))))
+
+(defn dedup
+  ([o] (internal-dedup-simple o))
+  ([o f] (internal-dedup-fn o f)))

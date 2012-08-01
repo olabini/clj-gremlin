@@ -304,16 +304,50 @@
       (is (= (-> g (v 4) (has-not "age" > 30) seq) nil))
       )
 
-    ;; back(integer)
-    ;; back(string)
-    ;; and(pipes...)
-    ;; or(pipes...)
-    ;; random(double)
-    ;; dedup(closure?)
-    ;; simplePath
-    ;; except(collection)
-    ;; retain(collection)
-    ;; interval(key,start,end)
+    (testing "back"
+      (is (= (-> g (v 1) (as "here") out (back "here") seq) [v1]))
+      (is (= (-> g V (as "here") out (back "here") seq) [v1 v6 v4]))
+
+      (is (= (-> g V out (where #(= (prop % :lang) "java")) (back 1) seq) [v3 v3 v5 v3]))
+      (is (= (-> g (v 4) out (where #(= (prop % :lang) "java")) (back 1) seq) [v5 v3]))
+      )
+
+    (testing "_"
+      (is (ids? (_ (V g)) #{"3" "2" "1" "6" "5" "4"}))
+      (is (ids? (_ (v g 1)) #{"1"}))
+      )
+
+    (testing "random"
+      (is (#{v1 v2 v3 v4 v5 v6} (first (-> g V (random 0.5)))))
+      (is (= v1 (first (-> g (v 1) (random 1.0)))))
+      )
+
+    (testing "except"
+      (is (= (-> g V (except [v2 v3]) seq) [v1 v6 v5 v4]))
+      (is (= (-> g (v 1) (except [v2 v3]) seq) [v1]))
+      (is (= (-> g (v 1) (except [v1]) seq) nil))
+      )
+
+    (testing "retain"
+      (is (= (-> g V (retain [v2 v3]) seq) [v3 v2]))
+      (is (= (-> g (v 1) (retain [v1 v2]) seq) [v1]))
+      (is (= (-> g (v 1) (retain [v3 v2]) seq) nil))
+      )
+
+    (testing "interval"
+      (is (= (-> g (v 1) outE (interval "weight" 0.0 0.6) inV seq) [v2 v3]))
+      (is (= (-> g (v 1) (interval :age 20 30) seq) [v1]))
+      )
+
+    (testing "dedup"
+      (is (= (-> g V dedup seq) [v3 v2 v1 v6 v5 v4]))
+      (is (= (-> g (v 1) dedup seq) [v1]))
+
+      (is (= (-> g V out dedup seq) [v2 v4 v3 v5]))
+      (is (= (-> g V both dedup seq) [v1 v4 v6 v2 v3 v5]))
+
+      (is (= (-> g V out (dedup #(prop % :lang)) seq) [v2 v3]))
+      )
 
     ;; sideEffect{closure}
     ;; groupBy(map?){closure}{closure}
@@ -326,6 +360,7 @@
     ;; store(collection?,closure?)
 
     ;; cap  -- can't be done until we have side effects
+    ;; simplePath -- can't be tested until we have loop
 
     ;; loop(integer){whileClosure}{emitClosure?}
     ;; loop(string){whileClosure}{emitClosure?}
@@ -334,7 +369,8 @@
     ;; fairMerge
     ;; exhaustMerge
 
-
+    ;; and(pipes...) -- haven't found any good test cases for these
+    ;; or(pipes...) -- haven't found any good test cases for these
 
 
 
@@ -345,13 +381,14 @@
                                :weight
                                )
                        )) #{"0.5" "0.4" "1.0"}))
-      ;; (is (= (set (-> g
-      ;;                 (v 1)
-      ;;                 (out "knows")
-      ;;                 (where #(> (prop % :age) 30))
-      ;;                 (out "created")
-      ;;                 :name))
-      ;;        #{"ripple" "lop"}))
+      (is (= (-> g
+                 (v 1)
+                 (out "knows")
+                 (where #(> (prop % :age) 30))
+                 (out "created")
+                 :name
+                 set)
+             #{"ripple" "lop"}))
 
       ;; g.v(1).out('likes').in('likes').out('likes').groupCount(m)
 
