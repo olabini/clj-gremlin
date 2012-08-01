@@ -2,7 +2,11 @@
   (:use clj-gremlin.core
         clojure.test)
   (:import (com.tinkerpop.blueprints.impls.tg TinkerGraphFactory)
-           (com.tinkerpop.pipes.util.structures Row)))
+           (com.tinkerpop.pipes.util.structures Row
+                                                Table
+                                                Tree)
+           (java.util ArrayList
+                      HashMap)))
 
 (defn ids? [left right]
   (= (into #{} (map #(.getId %) left)) right))
@@ -359,59 +363,175 @@
       )
 
     (testing "group"
-      (let [m (java.util.HashMap.)]
+      (let [m (HashMap.)]
         (doall (-> g V (group m #(prop % :lang) #(prop % :name)) seq))
         (is (= m {"java" ["lop" "ripple"] nil ["vadas" "marko" "peter" "josh"]}))
         )
-      (let [m (java.util.HashMap.)]
+      (let [m (HashMap.)]
         (doall (-> g (v 1) (group m #(prop % :lang) #(prop % :name)) seq))
         (is (= m {nil ["marko"]}))
         )
       )
 
     (testing "group-count"
-      (let [m (java.util.HashMap.)]
+      (let [m (HashMap.)]
         (doall (-> g V (out "created") (group-count m #(prop % :name)) seq))
         (is (= m {"lop" 3 "ripple" 1}))
         )
 
-      (let [m (java.util.HashMap.)]
+      (let [m (HashMap.)]
         (doall (-> g (v 1) (out "created") (group-count m #(prop % :name)) seq))
         (is (= m {"lop" 1}))
         )
 
-      (let [m (java.util.HashMap.)]
+      (let [m (HashMap.)]
         (doall (-> g V (out "created") (group-count m #(prop % :name) (fn [a b] (+ b 2))) seq))
         (is (= m {"lop" 6 "ripple" 2}))
         )
 
-      (let [m (java.util.HashMap.)]
+      (let [m (HashMap.)]
         (doall (-> g (v 1) (out "created") (group-count m #(prop % :name) (fn [a b] (+ b 2))) seq))
         (is (= m {"lop" 2}))
         )
       )
 
 
-    ;; aggregate(collection?,closure?)
-    ;; table(table?,strings..?,closures..?)
-    ;; tree(map?, closures..?)
-    ;; optional(integer)
-    ;; optional(string)
-    ;; store(collection?,closure?)
+    (testing "aggregate"
+      (let [x (ArrayList.)]
+        (doall (-> g (v 1) (aggregate x) (out "created") (in "created") (except x) seq))
+        (is (= x [v1]))
+        )
+
+      (let [x (ArrayList.)]
+        (doall (-> g V (aggregate x) seq))
+        (is (= x [v3 v2 v1 v6 v5 v4]))
+        )
+
+      (let [x (ArrayList.)]
+        (doall (-> g V (aggregate x #(prop % :name)) seq))
+        (is (= x ["lop" "vadas" "marko" "peter" "ripple" "josh"]))
+        )
+
+      (let [x (ArrayList.)]
+        (doall (-> g (v 1) (aggregate x #(prop % :name)) seq))
+        (is (= x ["marko"]))
+        )
+      )
+
+    (testing "table"
+      (let [t (Table.)]
+        (doall (-> g (v 1) (table t) seq))
+        (is (= t [[]]))
+        )
+
+      (let [t (Table.)]
+        (doall (-> g (v 1) (as "a") out :name (as "b") (table t) seq))
+        (is (= t [(Row. [v1 "vadas"] ["a" "b"]) (Row. [v1 "josh"] ["a" "b"]) (Row. [v1 "lop"] ["a" "b"])]))
+        )
+
+      (let [t (Table.)]
+        (doall (-> g (v 1) (as "a") out (as "b") (table t #(prop % :name)) seq))
+        (is (= t [(Row. ["marko" "vadas"] ["a" "b"]) (Row. ["marko" "josh"] ["a" "b"]) (Row. ["marko" "lop"] ["a" "b"])]))
+        )
+
+      (let [t (Table.)]
+        (doall (-> g (v 1) (as "a") out :name (as "b") (table t #(prop % :name) #(.length %)) seq))
+        (is (= t [(Row. ["marko" (int 5)] ["a" "b"]) (Row. ["marko" (int 4)] ["a" "b"]) (Row. ["marko" (int 3)] ["a" "b"])]))
+        )
+      )
+
+    (testing "tree"
+      (let [m (Tree.)]
+        (doall (-> g (v 1) (tree m) seq))
+        (is (= m {v1 {}}))
+        )
+
+      (let [m (Tree.)]
+        (doall (-> g (v 1) out out (tree m) seq))
+        (is (= m {v1 {v4 {v3 {} v5 {}}}}))
+        )
+
+      (let [m (Tree.)]
+        (doall (-> g (v 1) (tree m #(prop % :name)) seq))
+        (is (= m {"marko" {}}))
+        )
+
+      (let [m (Tree.)]
+        (doall (-> g (v 1) out out (tree m #(prop % :name)) seq))
+        (is (= m {"marko" {"josh" {"lop" {} "ripple" {}}}}))
+        )
+
+      (let [m (Tree.)]
+        (doall (-> g (v 1) out out (tree m #(prop % :name) #(prop % :age)) seq))
+        (is (= m {"marko" {(int 32) {"ripple" {}}} (int 29) {"josh" {nil {}}}}))
+        )
+      )
+
+    (testing "optional"
+      (is (= (-> g V (as "a") out (optional "a") seq) [v3 v2 v1 v6 v5 v4]))
+      (is (= (-> g (v 1) (as "a") out (optional "a") seq) [v1]))
+
+      (is (= (-> g V (as "a") out (optional 1) seq) [v3 v2 v1 v6 v5 v4]))
+      (is (= (-> g (v 1) (as "a") out (optional 1) seq) [v1]))
+      )
+
+    (testing "store"
+      (let [a (ArrayList.)]
+        (doall (-> g V (store a) seq))
+        (is (= a [v3 v2 v1 v6 v5 v4]))
+        )
+
+      (let [a (ArrayList.)]
+        (doall (-> g (v 1) (store a) seq))
+        (is (= a [v1]))
+        )
+
+      (let [a (ArrayList.)]
+        (doall (-> g V (store a #(prop % :name)) seq))
+        (is (= a ["lop" "vadas" "marko" "peter" "ripple" "josh"]))
+        )
+
+      (let [a (ArrayList.)]
+        (doall (-> g (v 1) (store a #(prop % :name)) seq))
+        (is (= a ["marko"]))
+        )
+      )
+
+    (testing "looping"
+      (is (= (-> g (v 1) out (looping 1 #(< (.getLoops %) 3)) :name seq) ["ripple" "lop"]))
+      (is (= (-> g (v 1) (as "here") out (looping "here" #(< (.getLoops %) 3)) :name)))
+
+      (is (= (-> g V out (looping 1 #(< (.getLoops %) 3) (fn [_] true)) :name seq) ["vadas" "josh" "lop" "ripple" "lop" "lop" "ripple" "lop"]))
+      (is (= (-> g V out (looping 1 #(< (.getLoops %) 3) (fn [_] false)) :name seq) nil))
+      )
+
+    (testing "if-then-else"
+      (is (= (-> g (v 1) out (if-then-else #(= (prop % :lang) "java") identity out) :name seq) ["ripple" "lop" "lop"]))
+      (is (= (-> g (v 1) (if-then-else #(= (prop % :lang) "java") identity out) :name seq) ["vadas" "josh" "lop"]))
+      )
+
+
+    (testing "copy-split and fair-merge and exhaust-merge"
+      (is (= (-> g V (copy-split (-> (_) outE) (-> (_) inE)) fair-merge seq) [e1 e3 e2 e5 e3 e6 e6 e1 e4 e4 e5 e2]))
+      (is (= (-> g (v 1) (copy-split (-> (_) outE) (-> (_) inE)) fair-merge seq) [e1 e2 e3]))
+
+      (is (= (-> g (v 1) out (copy-split (-> (_) :name) (-> (_) :age)) fair-merge seq) ["vadas" 27 "josh" 32 "lop" nil]))
+      (is (= (-> g (v 1) out (copy-split (-> (_) :name) (-> (_) :age)) exhaust-merge seq) ["vadas" "josh" "lop" 27 32 nil]))
+      )
+
+    (testing "cap"
+      )
+
+    (testing "simple-path"
+      )
+
+    (testing "enable-path"
+      )
 
     ;; cap  -- can't be done until we have side effects
     ;; simplePath -- can't be tested until we have loop
 
-    ;; loop(integer){whileClosure}{emitClosure?}
-    ;; loop(string){whileClosure}{emitClosure?}
-    ;; ifThenElse{ifClosure}{thenClosure}{elseClosure}
-    ;; copySplit(pipes...)
-    ;; fairMerge
-    ;; exhaustMerge
-
-    ;; and(pipes...) -- haven't found any good test cases for these
-    ;; or(pipes...) -- haven't found any good test cases for these
-
+    ;; enablePath
 
 
     (testing "chains"

@@ -1,6 +1,7 @@
 (ns clj-gremlin.core
   (:import (clj-gremlin.pipeline GremlinClojurePipeline)
-           (com.tinkerpop.pipes PipeFunction)
+           (com.tinkerpop.pipes Pipe
+                                PipeFunction)
            (com.tinkerpop.pipes.util.structures Pair)
            (com.tinkerpop.blueprints Graph
                                      Element)
@@ -82,7 +83,7 @@
   (internal-has-not-kv [self k v])
   (internal-has-not-cmp [self k cmp v])
   (back [self v])
-  (_ [self])
+  (internal-_ [self])
   (random [self n])
   (except [self c])
   (retain [self c])
@@ -94,6 +95,21 @@
   (internal-group-3 [self m f1 f2 f3])
   (internal-group-count-1 [self m f1])
   (internal-group-count-2 [self m f1 f2])
+  (internal-aggregate-1 [self m])
+  (internal-aggregate-2 [self m f])
+  (internal-table-1 [self t])
+  (internal-table-fns [self t fs])
+  (internal-tree-1 [self m])
+  (internal-tree-fns [self m fs])
+  (optional [self at])
+  (internal-store-1 [self l])
+  (internal-store-2 [self l f])
+  (internal-loop-1 [self at f])
+  (internal-loop-2 [self at f1 f2])
+  (if-then-else [self i t e])
+  (internal-copy-split [self pipes])
+  (fair-merge [self])
+  (exhaust-merge [self])
   )
 
 (defn- ensure-type [o]
@@ -144,7 +160,7 @@
   (internal-has-not-kv [self k v] (.hasNot self k v))
   (internal-has-not-cmp [self k cmp v] (.hasNot self k cmp v))
   (back [self v] (.back self v))
-  (_ [self] (._ self))
+  (internal-_ [self] (._ self))
   (random [self n] (.random self n))
   (except [self c] (.except self c))
   (retain [self c] (.retain self c))
@@ -156,6 +172,21 @@
   (internal-group-3 [self m f1 f2 f3] (.groupBy self m (clojure-pipe-function f1) (clojure-pipe-function f2) (clojure-pipe-function f3)))
   (internal-group-count-1 [self m f1] (.groupCount self m (clojure-pipe-function f1)))
   (internal-group-count-2 [self m f1 f2] (.groupCount self m (clojure-pipe-function f1) (clojure-pipe-function-pair f2)))
+  (internal-aggregate-1 [self m] (.aggregate self m))
+  (internal-aggregate-2 [self m f] (.aggregate self m (clojure-pipe-function f)))
+  (internal-table-1 [self t] (.table self t))
+  (internal-table-fns [self t fs] (.table self t (into-array PipeFunction (map clojure-pipe-function fs))))
+  (internal-tree-1 [self m] (.tree self m (into-array PipeFunction [])))
+  (internal-tree-fns [self m fs] (.tree self m (into-array PipeFunction (map clojure-pipe-function fs))))
+  (optional [self at] (.optional self at))
+  (internal-store-1 [self l] (.store self l))
+  (internal-store-2 [self l f] (.store self l (clojure-pipe-function f)))
+  (internal-loop-1 [self at f] (.loop self at (clojure-pipe-function f)))
+  (internal-loop-2 [self at f1 f2] (.loop self at (clojure-pipe-function f1) (clojure-pipe-function f2)))
+  (if-then-else [self i t e] (.ifThenElse self (clojure-pipe-function i) (clojure-pipe-function t) (clojure-pipe-function e)))
+  (internal-copy-split [self pipes] (.copySplit self (into-array Pipe pipes)))
+  (fair-merge [self] (.fairMerge self))
+  (exhaust-merge [self] (.exhaustMerge self))
 
   Element
   (internal-out  [self labels] (internal-out  (clojure-pipeline self) labels))
@@ -186,7 +217,7 @@
   (internal-has-not-kv [self k v] (internal-has-not-kv (clojure-pipeline self) k v))
   (internal-has-not-cmp [self k cmp v] (internal-has-not-cmp (clojure-pipeline self) k cmp v))
   (back [self v] (back (clojure-pipeline self) v))
-  (_ [self] (_ (clojure-pipeline self)))
+  (internal-_ [self] (internal-_ (clojure-pipeline self)))
   (random [self n] (random (clojure-pipeline self) n))
   (except [self c] (except (clojure-pipeline self) c))
   (retain [self c] (retain (clojure-pipeline self) c))
@@ -198,6 +229,21 @@
   (internal-group-3 [self m f1 f2 f3] (internal-group-3 (clojure-pipeline self) m f1 f2 f3))
   (internal-group-count-1 [self m f1] (internal-group-count-1 (clojure-pipeline self) m f1))
   (internal-group-count-2 [self m f1 f2] (internal-group-count-2 (clojure-pipeline self) m f1 f2))
+  (internal-aggregate-1 [self m] (internal-aggregate-1 (clojure-pipeline self) m))
+  (internal-aggregate-2 [self m f] (internal-aggregate-2 (clojure-pipeline self) m f))
+  (internal-table-1 [self t] (internal-table-1 (clojure-pipeline self) t))
+  (internal-table-fns [self t fs] (internal-table-fns (clojure-pipeline self) t fs))
+  (internal-tree-1 [self m] (internal-tree-1 (clojure-pipeline self) m))
+  (internal-tree-fns [self m fs] (internal-tree-fns (clojure-pipeline self) m fs))
+  (optional [self at] (optional (clojure-pipeline self) at))
+  (internal-store-1 [self l] (internal-store-1 (clojure-pipeline self) l))
+  (internal-store-2 [self l f] (internal-store-2 (clojure-pipeline self) l f))
+  (internal-loop-1 [self at f] (internal-loop-1 (clojure-pipeline self) at f))
+  (internal-loop-2 [self at f1 f2] (internal-loop-2 (clojure-pipeline self) at f1 f2))
+  (if-then-else [self i t e] (if-then-else (clojure-pipeline self) i t e))
+  (internal-copy-split [self pipes] (internal-copy-split (clojure-pipeline self) pipes))
+  (fair-merge [self] (fair-merge (clojure-pipeline self)))
+  (exhaust-merge [self] (exhaust-merge (clojure-pipeline self)))
   )
 
 (defn out [o & labels]
@@ -268,3 +314,30 @@
 (defn group-count
   ([o m f1] (internal-group-count-1 o m f1))
   ([o m f1 f2] (internal-group-count-2 o m f1 f2)))
+
+(defn aggregate
+  ([o m] (internal-aggregate-1 o m))
+  ([o m f] (internal-aggregate-2 o m f)))
+
+(defn table
+  ([o t] (internal-table-1 o t))
+  ([o t & fs] (internal-table-fns o t fs)))
+
+(defn tree
+  ([o m] (internal-tree-1 o m))
+  ([o m & fs] (internal-tree-fns o m fs)))
+
+(defn store
+  ([o l] (internal-store-1 o l))
+  ([o l f] (internal-store-2 o l f)))
+
+(defn looping
+  ([o at f] (internal-loop-1 o at f))
+  ([o at f1 f2] (internal-loop-2 o at f1 f2)))
+
+(defn _
+  ([] (clojure-pipeline nil))
+  ([o] (internal-_ o)))
+
+(defn copy-split [o & pipes]
+  (internal-copy-split o pipes))
