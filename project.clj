@@ -5,4 +5,5 @@
                  [com.tinkerpop.gremlin/gremlin-java "2.0.0"]
                  [com.tinkerpop.blueprints/blueprints-core "2.0.0"]]
   :aot [clj-gremlin.pipeline]
+;;  :warn-on-reflection true
   )
