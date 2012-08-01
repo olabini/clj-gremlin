@@ -224,17 +224,86 @@
       (is (ids? (as (v g 1) "something") #{"1"}))
       )
 
-    ;; memoize(string, map?)
-    ;; memoize(integer, map?)
-    ;; path(closures..?)
+    (testing "memo"
+      (is (ids? (-> g (v 1) (as "a") (out "knows") (as "b") (memo "a")) #{"2" "4"}))
+      (is (ids? (-> g (v 1) (as "a") (out "knows") (as "b") (memo 1)) #{"2" "4"}))
+      (let [m (java.util.HashMap.)
+            m2 (java.util.HashMap.)]
+        (is (ids? (-> g (v 1) (as "a") (out "knows") (as "b") (memo "a" m)) #{"2" "4"}))
+        (is (ids? (-> g (v 1) (as "a") (out "knows") (as "b") (memo 1 m2)) #{"2" "4"}))
+        (is (= m  {v1 [v2 v4]}))
+        (is (= m2 {v1 [v2 v4]}))
+        )
+      )
 
-    ;; filter{closure}  -- should be "where" instead
-    ;; [i]
-    ;; [i..j]
-    ;; has('key',value)
-    ;; has('key',T,value)
-    ;; hasNot('key',value)
-    ;; hasNot('key',T,value)
+    (testing "path"
+      (is (= (-> g V path seq) [[v3] [v2] [v1] [v6] [v5] [v4]]))
+      (is (= (-> g (v 1) path seq) [[v1]]))
+      (is (= (-> g (v 1) out path seq) [[v1 v2] [v1 v4] [v1 v3]]))
+
+      (is (= (-> g (v 1) out (path #(prop % :age) #(prop % :name)) seq) [[29 "vadas"] [29 "josh"] [29 "lop"]]))
+      )
+
+
+    (testing "where"
+      (is (= (-> g V     (where (fn [_] false)) seq) nil))
+      (is (= (-> g (v 1) (where (fn [_] false)) seq) nil))
+
+      (is (= (-> g V     (where (fn [_] true)) seq) [v3 v2 v1 v6 v5 v4]))
+      (is (= (-> g (v 1) (where (fn [_] true)) seq) [v1]))
+
+      (is (= (-> g V     (where #(= (prop % :lang) "java")) seq) [v3 v5]))
+      )
+
+    (testing "at"
+      (is (= (-> g V     (at 2) seq) [v1]))
+      (is (= (-> g (v 1) (at 0) seq) [v1]))
+
+      (is (= (-> g V     (at 2 4) seq) [v1 v6 v5]))
+      (is (= (-> g (v 1) (at 0 2) seq) [v1]))
+      )
+
+    (testing "has"
+      (is (= (-> g V     (has "name" "marko") seq) [v1]))
+      (is (= (-> g V     (has "name" "ola") seq) nil))
+
+      (is (= (-> g (v 1) (has "name" "marko") seq) [v1]))
+      (is (= (-> g (v 1) (has "name" "ola") seq) nil))
+
+      (is (= (-> g V     (has "blah" nil) seq) [v3 v2 v1 v6 v5 v4]))
+
+      (is (= (-> g V     (has "age" > 30) seq) [v6 v4]))
+      (is (= (-> g V     (has "age" > 32) seq) [v6]))
+      (is (= (-> g V     (has "age" >= 32) seq) [v6 v4]))
+      (is (= (-> g V     (has "age" = 32) seq) [v4]))
+      (is (= (-> g V     (has "age" not= 32) seq) [v3 v2 v1 v6 v5]))
+      (is (= (-> g V     (has "age" < 32) seq) [v2 v1]))
+      (is (= (-> g V     (has "age" <= 32) seq) [v2 v1 v4]))
+
+      (is (= (-> g (v 4) (has "age" > 30) seq) [v4]))
+
+      )
+
+    (testing "has-not"
+      (is (= (-> g V     (has-not "name" "marko") seq) [v3 v2 v6 v5 v4]))
+      (is (= (-> g V     (has-not "name" "ola") seq) [v3 v2 v1 v6 v5 v4]))
+
+      (is (= (-> g (v 1) (has-not "name" "marko") seq) nil))
+      (is (= (-> g (v 1) (has-not "name" "ola") seq) [v1]))
+
+      (is (= (-> g V     (has-not "blah" nil) seq) nil))
+
+      (is (= (-> g V     (has-not "age" > 30) seq) [v2 v1]))
+      (is (= (-> g V     (has-not "age" > 32) seq) [v2 v1 v4]))
+      (is (= (-> g V     (has-not "age" >= 32) seq) [v2 v1]))
+      (is (= (-> g V     (has-not "age" = 32) seq) [v3 v2 v1 v6 v5]))
+      (is (= (-> g V     (has-not "age" not= 32) seq) [v4]))
+      (is (= (-> g V     (has-not "age" < 32) seq) [v6 v4]))
+      (is (= (-> g V     (has-not "age" <= 32) seq) [v6]))
+
+      (is (= (-> g (v 4) (has-not "age" > 30) seq) nil))
+      )
+
     ;; back(integer)
     ;; back(string)
     ;; and(pipes...)

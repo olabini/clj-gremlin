@@ -5,6 +5,7 @@
            (com.tinkerpop.blueprints Graph
                                      Element)
            (com.tinkerpop.gremlin.java GremlinPipeline)
+           (com.tinkerpop.gremlin Tokens$T)
            ))
 
 (defn clojure-pipeline [starts]
@@ -38,6 +39,16 @@
 (defn prop [^Element e k]
   (.getProperty e (name k)))
 
+(def tokens {
+             =    Tokens$T/eq
+             >    Tokens$T/gt
+             >=   Tokens$T/gte
+             <    Tokens$T/lt
+             <=   Tokens$T/lte
+             not= Tokens$T/neq
+             })
+
+
 (defprotocol Steps
   (internal-out [self labels])
   (internal-outE [self labels])
@@ -57,6 +68,15 @@
   (internal-order [self f])
   (as [self label])
   (internal-select [self a f])
+  (internal-memo [self name m])
+  (internal-path [self fs])
+  (where [self f])
+  (internal-at-single [self n])
+  (internal-at-range [self from to])
+  (internal-has-kv [self k v])
+  (internal-has-cmp [self k cmp v])
+  (internal-has-not-kv [self k v])
+  (internal-has-not-cmp [self k cmp v])
   )
 
 (extend-protocol Steps
@@ -88,6 +108,18 @@
     (if (or a f)
       (.select self a (into-array PipeFunction (if f (map clojure-pipe-function f) [])))
       (.select self)))
+  (internal-memo [self name m]
+    (if m
+      (.memoize self name m)
+      (.memoize self name)))
+  (internal-path [self fs] (.path self (into-array PipeFunction (map clojure-pipe-function fs))))
+  (where [self f] (.filter self (clojure-pipe-function f)))
+  (internal-at-single [self n] (.range self n n))
+  (internal-at-range [self from to] (.range self from to))
+  (internal-has-kv [self k v] (.has self k v))
+  (internal-has-cmp [self k cmp v] (.has self k cmp v))
+  (internal-has-not-kv [self k v] (.hasNot self k v))
+  (internal-has-not-cmp [self k cmp v] (.hasNot self k cmp v))
 
   Element
   (internal-out  [self labels] (internal-out  (clojure-pipeline self) labels))
@@ -108,6 +140,15 @@
   (internal-order  [self f] (internal-order (clojure-pipeline self) f))
   (as [self label] (as (clojure-pipeline self) label))
   (internal-select [self a f] (internal-select (clojure-pipeline self) a f))
+  (internal-memo [self name m] (internal-memo (clojure-pipeline self) name m))
+  (internal-path [self fs] (internal-path (clojure-pipeline self) fs))
+  (where [self f] (where (clojure-pipeline self) f))
+  (internal-at-single [self n] (internal-at-single (clojure-pipeline self) n))
+  (internal-at-range [self from to] (internal-at-range (clojure-pipeline self) from to))
+  (internal-has-kv [self k v] (internal-has-kv (clojure-pipeline self) k v))
+  (internal-has-cmp [self k cmp v] (internal-has-cmp (clojure-pipeline self) k cmp v))
+  (internal-has-not-kv [self k v] (internal-has-not-kv (clojure-pipeline self) k v))
+  (internal-has-not-cmp [self k cmp v] (internal-has-not-cmp (clojure-pipeline self) k cmp v))
   )
 
 (defn out [o & labels]
@@ -147,3 +188,22 @@
        (internal-select o a f)
        (internal-select o a (keep identity [f]))))
   )
+
+(defn memo
+  ([o name-or-number] (memo o name-or-number nil))
+  ([o name-or-number m] (internal-memo o name-or-number m)))
+
+(defn path [o & fs]
+  (internal-path o fs))
+
+(defn at
+  ([o n] (internal-at-single o n))
+  ([o n to] (internal-at-range o n to)))
+
+(defn has
+  ([o k v] (internal-has-kv o k v))
+  ([o k cmp v] (internal-has-cmp o k (get tokens cmp cmp) (int v))))
+
+(defn has-not
+  ([o k v] (internal-has-not-kv o k v))
+  ([o k cmp v] (internal-has-not-cmp o k (get tokens cmp cmp) (int v))))
