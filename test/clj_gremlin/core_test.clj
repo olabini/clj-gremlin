@@ -322,7 +322,7 @@
       )
 
     (testing "random"
-      (is (#{v1 v2 v3 v4 v5 v6} (first (-> g V (random 0.5)))))
+      (is (#{v1 v2 v3 v4 v5 v6} (first (-> g V (random 1.0)))))
       (is (= v1 (first (-> g (v 1) (random 1.0)))))
       )
 
@@ -520,19 +520,35 @@
       )
 
     (testing "cap"
+      (is (= (-> g V (group #(prop % :lang) #(prop % :name)) cap seq) [{nil ["vadas" "marko" "peter" "josh"] "java" ["lop" "ripple"]}]))
+
+      (is (= (-> g V (out "created") group-count cap seq) [{v3 3 v5 1}]))
+      (is (= (-> g V (out "created") (group-count #(prop % :name)) cap seq) [{"lop" 3 "ripple" 1}]))
+
+      (is (= (-> g V aggregate cap seq) [[v3 v2 v1 v6 v5 v4]]))
+      (is (= (-> g V (aggregate #(prop % :name)) cap seq) [["lop" "vadas" "marko" "peter" "ripple" "josh"]]))
+
+      (is (= (-> g (v 1) table cap seq) [[[]]]))
+      (is (= (-> g (v 1) (as "a") out :name (as "b") table cap seq) [[(Row. [v1 "vadas"] ["a" "b"]) (Row. [v1 "josh"] ["a" "b"]) (Row. [v1 "lop"] ["a" "b"])]]))
+      (is (= (-> g (v 1) (as "a") out (as "b") (table #(prop % :name)) cap seq) [[(Row. ["marko" "vadas"] ["a" "b"]) (Row. ["marko" "josh"] ["a" "b"]) (Row. ["marko" "lop"] ["a" "b"])]]))
+      (is (= (-> g (v 1) (as "a") out :name (as "b") (table #(prop % :name) #(.length %)) cap seq) [[(Row. ["marko" (int 5)] ["a" "b"]) (Row. ["marko" (int 4)] ["a" "b"]) (Row. ["marko" (int 3)] ["a" "b"])]]))
+
+      (is (= (-> g (v 1) tree cap seq) [{v1 {}}]))
+      (is (= (-> g (v 1) out out tree cap seq) [{v1 {v4 {v3 {} v5 {}}}}]))
+      (is (= (-> g (v 1) (tree #(prop % :name)) cap seq) [{"marko" {}}]))
+      (is (= (-> g (v 1) out out (tree #(prop % :name)) cap seq) [{"marko" {"josh" {"lop" {} "ripple" {}}}}]))
+      (is (= (-> g (v 1) out out (tree #(prop % :name) #(prop % :age)) cap seq) [{"marko" {(int 32) {"ripple" {}}} (int 29) {"josh" {nil {}}}}]))
+
+      (is (= (-> g (v 1) (store #(prop % :name)) cap seq) [["marko"]]))
       )
 
     (testing "simple-path"
+      (is (= (-> g V out simple-path (looping 2 #(< (.getLoops %) 5)) seq) nil))
       )
 
     (testing "enable-path"
+      (is (= (-> g (v 1) out (looping 1 #(< (.getLoops %) 3) #(.contains (.getPath %) (v g 4))) enable-path seq) [v5 v3]))
       )
-
-    ;; cap  -- can't be done until we have side effects
-    ;; simplePath -- can't be tested until we have loop
-
-    ;; enablePath
-
 
     (testing "chains"
       (is (= (set (map str (-> g
@@ -550,11 +566,30 @@
                  set)
              #{"ripple" "lop"}))
 
-      ;; g.v(1).out('likes').in('likes').out('likes').groupCount(m)
 
-      ;; m = [:]; c = 0;
-      ;; g.V.out.groupCount(m).loop(2){c++ < 1000}
-      ;; m.sort{a,b -> a.value <=> b.value}
-      )
+      (is (= (-> g
+                 (v 1)
+                 (out "knows")
+                 (in "knows")
+                 (out "knows")
+                 group-count
+                 cap
+                 seq)
+             [{v2 (int 2) v4 (int 2)}]))
+
+      (let [m (HashMap.)
+            c (atom 0)]
+        (-> g
+            V
+            out
+            (group-count m)
+            (looping 2 (fn [_] (< (swap! c inc) 1000)))
+            seq
+            doall)
+        (is (= (sort-by (fn [[k v]] v) (into {} m)) [[v2 (int 1)]
+                                                     [v4 (int 1)]
+                                                     [v5 (int 2)]
+                                                     [v3 (int 4)]]))
+      ))
     )
   )
