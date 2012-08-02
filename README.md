@@ -1,4 +1,3 @@
-
 h1. clj-gremlin
 
 Gremlin is a language/framework for traversing and querying graph databases. The original implementation is written in Groovy, and you can read all about it here: "Gremlin Wiki":https://github.com/tinkerpop/gremlin/wiki. clj-gremlin is an implementation of Gremlin for Clojure. We try to keep as close as possible to the Groovy implementation, so that you can read the original documentation and apply those lessons to the Clojure implementation. That said, there are a few things that will be different, and this page will document them.
