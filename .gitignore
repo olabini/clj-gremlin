@@ -2,3 +2,5 @@
 /.lein-failures
 /lib
 /classes
+/clj-gremlin-*.jar
+/pom.xml
