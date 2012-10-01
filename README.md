@@ -11,7 +11,7 @@ clj-gremlin is available through Clojars, so in order to use it you can simply a
 In order to get access to all the steps and helper functions, use the clj-gremlin.core namespace:
 
 ```clojure
-(:use clj.gremlin.core)
+(:use clj-gremlin.core)
 ```
 
 ## Simple usage
