@@ -25,11 +25,13 @@
   (proxy [PipeFunction] []
       (compute [^Pair input] (int (f (.getA input) (.getB input))))))
 
-(defn V [^Graph g]
-  (clojure-pipeline (.getVertices g)))
+(defn V
+  ([^Graph g] (clojure-pipeline (.getVertices g)))
+  ([^Graph g k v] (clojure-pipeline (.getVertices g (name k) v))))
 
-(defn E [^Graph g]
-  (clojure-pipeline (.getEdges g)))
+(defn E
+  ([^Graph g] (clojure-pipeline (.getEdges g)))
+  ([^Graph g k v] (clojure-pipeline (.getEdges g (name k) v))))
 
  (defn v
    ([^Graph g i] (.getVertex g i))

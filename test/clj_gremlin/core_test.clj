@@ -29,6 +29,8 @@
   (deftest gremlin-test
     (testing "V"
       (is (ids? (V g) #{"3" "2" "1" "6" "5" "4"}))
+      (is (ids? (V g :name "marko") #{"1"}))
+      (is (ids? (V g :lang "java") #{"3" "5"}))
       )
 
     (testing "properties"
@@ -45,6 +47,7 @@
 
     (testing "E"
       (is (ids? (E g) #{"10" "7" "9" "8" "11" "12"}))
+      (is (ids? (E g :weight (float 1.0)) #{"8" "10"}))
       )
 
     (testing "v"
