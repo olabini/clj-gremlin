@@ -5,7 +5,7 @@ Gremlin is a language/framework for traversing and querying graph databases. The
 clj-gremlin is available through Clojars, so in order to use it you can simply add this to your lein project.xml file:
 
 ```clojure
-:dependencies [[clj-gremlin "0.0.2"]]
+:dependencies [[clj-gremlin "0.0.3"]]
 ```
 
 In order to get access to all the steps and helper functions, use the clj-gremlin.core namespace:
